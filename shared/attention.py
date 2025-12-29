@@ -27,7 +27,7 @@ except ModuleNotFoundError:
     flash_attn = None
 
 try:
-    from sageattention import sageattn_varlen
+    from sageattn3 import sageattn_varlen
     def sageattn_varlen_wrapper(
             q,
             k,
@@ -68,7 +68,7 @@ def sageattn2_wrapper(
     return o
 
 try:
-    from sageattn import sageattn_blackwell as sageattn3
+    from sageattn3 import sageattn3_blackwell as sageattn3
 except ImportError:
     sageattn3 = None
 
