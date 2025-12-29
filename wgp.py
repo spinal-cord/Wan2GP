@@ -5901,7 +5901,7 @@ def generate_video(
 
             # time_flag = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%Hh%Mm%Ss")
             # save_prompt = "_in_" + original_prompts[0]
-            # file_name = f"{time_flag}_seed{seed}_{sanitize_file_name(save_prompt[:50]).strip()}.mp4"
+            # file_name = f"{time_flag}_seed{seed}_{sanitize_file_name(save_prompt[:13]).strip()}.mp4"
             # sample = samples.cpu()
             # cache_video( tensor=sample[None].clone(), save_file=os.path.join(save_path, file_name), fps=16, nrow=1, normalize=True, value_range=(-1, 1))
             if samples == None:
@@ -9392,7 +9392,7 @@ def generate_video_tab(update_form = False, state_dict = None, ui_defaults = Non
                     )
 
                     with gr.Column():
-                        gr.Markdown('<B>Customize the Output Filename using Settings Values (<I>date, seed, resolution, num_inference_steps, prompt, flow_shift, video_length, guidance_scale</I>). For Instance:<BR>"<I>{date(YYYY-MM-DD_HH-mm-ss)}_{seed}_{prompt(50)}, {num_inference_steps}</I>"</B>')
+                        gr.Markdown('<B>Customize the Output Filename using Settings Values (<I>date, seed, resolution, num_inference_steps, prompt, flow_shift, video_length, guidance_scale, guidance2_scale, guidance3_scale, switch_threshold, sample_solver</I>). For Instance:<BR>"<I>"shift_{flow_shift}_cfg_{guidance_scale}_cfg2_{guidance2_scale}_switch-at_{switch_threshold}_sampler_{sample_solver}_length_{video_length}_seed_{seed}_{date(YYYY-MM-DD_HH-mm-ss)}_{prompt(13)}"</I>"</B>')
                         output_filename = gr.Text( label= " Output Filename ( Leave Blank for Auto Naming)", value= ui_get("output_filename"))
 
             if not update_form:
@@ -10550,7 +10550,7 @@ if __name__ == "__main__":
             print("\n[DRY-RUN] Queue validation:")
             valid_count = 0
             for i, task in enumerate(queue, 1):
-                prompt = (task.get('prompt', '') or '')[:50]
+                prompt = (task.get('prompt', '') or '')[:13]
                 model = task.get('params', {}).get('model_type', 'unknown')
                 steps = task.get('params', {}).get('num_inference_steps', '?')
                 length = task.get('params', {}).get('video_length', '?')
