@@ -2111,23 +2111,26 @@ for src,tgt in zip(src_move,tgt_move):
 
 if not Path(config_load_filename).is_file():
     server_config = {
-        "attention_mode" : "auto",  
+        "attention_mode" : "sage2",  
         "transformer_types": [], 
-        "transformer_quantization": "int8",
-        "text_encoder_quantization" : "int8",
+        "transformer_quantization": "bf16",
+        "text_encoder_quantization" : "bf16",
         "save_path": "outputs",  
         "image_save_path": "outputs",  
-        "compile" : "",
+        "compile" : "transformer",
         "metadata_type": "metadata",
         "boost" : 1,
         "clear_file_list" : 5,
         "vae_config": 0,
-        "profile" : profile_type.LowRAM_LowVRAM,
+        "profile" : profile_type.HighRAM_LowVRAM,
         "preload_model_policy": [],
         "UI_theme": "default",
         "checkpoints_paths": fl.default_checkpoints_paths,
 		"queue_color_scheme": "pastel",
         "model_hierarchy_type": 1,
+        "mmaudio_enabled": 1,
+        "mmaudio_mode": 2,
+        "mmaudio_persistence": 1,
     }
 
     with open(server_config_filename, "w", encoding="utf-8") as writer:
@@ -2648,10 +2651,10 @@ if len(args.vae_config) > 0:
 reload_needed = False
 save_path = server_config.get("save_path", os.path.join(os.getcwd(), "outputs"))
 image_save_path = server_config.get("image_save_path", os.path.join(os.getcwd(), "outputs"))
-if not "video_output_codec" in server_config: server_config["video_output_codec"]= "libx264_8"
+if not "video_output_codec" in server_config: server_config["video_output_codec"]= "libx265_28"
 if not "video_container" in server_config: server_config["video_container"]= "mp4"
 if not "embed_source_images" in server_config: server_config["embed_source_images"]= False
-if not "image_output_codec" in server_config: server_config["image_output_codec"]= "jpeg_95"
+if not "image_output_codec" in server_config: server_config["image_output_codec"]= "webp_85"
 
 preload_model_policy = server_config.get("preload_model_policy", []) 
 
