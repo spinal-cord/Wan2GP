@@ -2135,7 +2135,7 @@ if not Path(config_load_filename).is_file():
         "checkpoints_paths": fl.default_checkpoints_paths,
 		"queue_color_scheme": "pastel",
         "model_hierarchy_type": 1,
-        "mmaudio_enabled": True
+        "mmaudio_enabled": True,
         "mmaudio_mode": 0,
         "mmaudio_persistence": 1,
     }
