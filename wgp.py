@@ -2124,7 +2124,7 @@ if not Path(config_load_filename).is_file():
         "text_encoder_quantization" : "bf16",
         "save_path": "outputs",  
         "image_save_path": "outputs",  
-        "compile" : "true",
+        "compile" : "transformer",
         "metadata_type": "metadata",
         "boost" : 1,
         "clear_file_list" : 5,
