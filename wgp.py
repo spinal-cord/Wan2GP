@@ -2120,7 +2120,7 @@ if not Path(config_load_filename).is_file():
     server_config = {
         "attention_mode" : "auto",  
         "transformer_types": [], 
-        "transformer_quantization": "int8",
+        "transformer_quantization": "bf16",
         "text_encoder_quantization" : "bf16",
         "save_path": "outputs",  
         "image_save_path": "outputs",  
