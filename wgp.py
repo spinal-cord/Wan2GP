@@ -2118,7 +2118,7 @@ for src,tgt in zip(src_move,tgt_move):
 
 if not Path(config_load_filename).is_file():
     server_config = {
-        "attention_mode" : "auto",  
+        "attention_mode" : "sage2",  
         "transformer_types": [], 
         "transformer_quantization": "bf16",
         "text_encoder_quantization" : "bf16",
@@ -2129,14 +2129,14 @@ if not Path(config_load_filename).is_file():
         "boost" : 1,
         "clear_file_list" : 5,
         "vae_config": 0,
-        "profile" : profile_type.HighRAM_HighVRAM,
+        "profile" : profile_type.HighRAM_LowVRAM,
         "preload_model_policy": [],
         "UI_theme": "default",
         "checkpoints_paths": fl.default_checkpoints_paths,
 		"queue_color_scheme": "pastel",
         "model_hierarchy_type": 1,
-        "mmaudio_enabled": True,
-        "mmaudio_mode": 0,
+        "mmaudio_enabled": 1,
+        "mmaudio_mode": 2,
         "mmaudio_persistence": 1,
     }
 
