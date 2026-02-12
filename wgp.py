@@ -10562,7 +10562,7 @@ def generate_video_tab(update_form = False, state_dict = None, ui_defaults = Non
                     )
 
                     with gr.Column():
-                        gr.Markdown('<B>Customize the Output Filename using Settings Values (<I>date, seed, resolution, num_inference_steps, prompt, flow_shift, video_length, guidance_scale</I>). For Instance:<BR>"<I>{date(YYYY-MM-DD_HH-mm-ss)}_{seed}_{prompt(50)}, {num_inference_steps}</I>"</B>')
+                        gr.Markdown('<B>Customize the Output Filename using Settings Values (<I>date, seed, resolution, num_inference_steps, prompt, flow_shift, video_length, guidance_scale, guidance2_scale, guidance3_scale, switch_threshold, sample_solver</I>). For Instance:<BR>"<I>shift_{flow_shift}_cfg_{guidance_scale}_cfg2_{guidance2_scale}_switch-at_{switch_threshold}_sampler_{sample_solver}_length_{video_length}_seed_{seed}_{date(YYYY-MM-DD_HH-mm-ss)}}</I>"</B>')
                         output_filename = gr.Text( label= " Output Filename ( Leave Blank for Auto Naming)", value= ui_get("output_filename"))
 
             if not update_form:
