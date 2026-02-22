@@ -2330,14 +2330,14 @@ for src,tgt in zip(src_move,tgt_move):
 
 if not Path(config_load_filename).is_file():
     server_config = {
-        "attention_mode" : "auto",  
+        "attention_mode" : "sage2",  
         "transformer_types": [], 
-        "transformer_quantization": "int8",
-        "text_encoder_quantization" : "int8",
+        "transformer_quantization": "bf16",
+        "text_encoder_quantization" : "bf16",
         "lm_decoder_engine": "",
         "save_path": "outputs",  
         "image_save_path": "outputs",  
-        "compile" : "",
+        "compile" : "transformer",
         "metadata_type": "metadata",
         "boost" : 1,
         "enable_int8_kernels": 0,
@@ -2345,10 +2345,10 @@ if not Path(config_load_filename).is_file():
         "enable_4k_resolutions": 0,
         "max_reserved_loras": -1,
         "vae_config": 0,
-        "profile" : profile_type.LowRAM_LowVRAM,
-        "video_profile": profile_type.LowRAM_LowVRAM,
-        "image_profile": profile_type.LowRAM_LowVRAM,
-        "audio_profile": 3.5,
+        "profile" : profile_type.HighRAM_LowVRAM,
+        "video_profile": profile_type.HighRAM_LowVRAM,
+        "image_profile": profile_type.HighRAM_LowVRAM,
+        "audio_profile": 2,
         "preload_model_policy": [],
         "UI_theme": "default",
         "checkpoints_paths": fl.default_checkpoints_paths,
@@ -2356,7 +2356,8 @@ if not Path(config_load_filename).is_file():
         "save_queue_if_crash": 1,
 		"queue_color_scheme": "pastel",
         "model_hierarchy_type": 1,
-        "mmaudio_mode": 0,
+        "mmaudio_enabled": True,
+        "mmaudio_mode": 2,
         "mmaudio_persistence": 1,
         "rife_version": "v4",
         "prompt_enhancer_temperature": 0.6,
@@ -2420,8 +2421,8 @@ _normalize_mmaudio_config(server_config)
 
 def _normalize_profile_defaults(config):
     if "profile" not in config:
-        config["profile"] = profile_type.LowRAM_LowVRAM
-    base_profile = config.get("profile", profile_type.LowRAM_LowVRAM)
+        config["profile"] = profile_type.HighRAM_LowVRAM
+    base_profile = config.get("profile", profile_type.HighRAM_LowVRAM)
     config.setdefault("video_profile", base_profile)
     config.setdefault("image_profile", base_profile)
     config.setdefault("audio_profile", 3.5)
@@ -2972,12 +2973,12 @@ reload_needed = False
 save_path = server_config.get("save_path", os.path.join(os.getcwd(), "outputs"))
 image_save_path = server_config.get("image_save_path", os.path.join(os.getcwd(), "outputs"))
 audio_save_path = server_config.get("audio_save_path", save_path)
-if not "video_output_codec" in server_config: server_config["video_output_codec"]= "libx264_8"
+if not "video_output_codec" in server_config: server_config["video_output_codec"]= "libx265_28"
 if not "video_container" in server_config: server_config["video_container"]= "mp4"
 if not "embed_source_images" in server_config: server_config["embed_source_images"]= False
 if not "enable_4k_resolutions" in server_config: server_config["enable_4k_resolutions"]= 0
 if not "max_reserved_loras" in server_config: server_config["max_reserved_loras"]= -1
-if not "image_output_codec" in server_config: server_config["image_output_codec"]= "jpeg_95"
+if not "image_output_codec" in server_config: server_config["image_output_codec"]= "webp_85"
 if not "audio_output_codec" in server_config: server_config["audio_output_codec"]= "aac_128"
 if not "audio_stand_alone_output_codec" in server_config: server_config["audio_stand_alone_output_codec"]= "wav"
 if not "rife_version" in server_config: server_config["rife_version"] = "v4"
