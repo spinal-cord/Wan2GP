@@ -2087,6 +2087,13 @@ def _parse_args():
     )
 
     parser.add_argument(
+        "--tf32",
+        type=int,
+        default=1,
+        help="Enable TF32 Tensor Cores for faster inference (1=enabled, 0=disabled, default: 1)"
+    )
+
+    parser.add_argument(
         "--server-port",
         type=str,
         default=0,
@@ -2961,7 +2968,22 @@ transformer_dtype_policy = server_config.get("transformer_dtype_policy", "")
 if args.fp16:
     transformer_dtype_policy = "fp16" 
 if args.bf16:
-    transformer_dtype_policy = "bf16" 
+    transformer_dtype_policy = "bf16"
+
+# Handle TF32 argument
+if args.tf32 == 1:
+    # Enable TF32 for faster inference
+    os.environ["WAN2GP_TF32"] = "1"
+else:
+    # Disable TF32 if explicitly set to 0
+    os.environ["WAN2GP_TF32"] = "0"
+
+# Apply TF32 setting to Wan models
+try:
+    from models.wan.any2video import set_tf32_enabled
+    set_tf32_enabled(args.tf32 == 1)
+except Exception:
+    pass
 text_encoder_quantization =server_config.get("text_encoder_quantization", "int8")
 attention_mode = server_config["attention_mode"]
 if len(args.attention)> 0:

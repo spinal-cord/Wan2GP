@@ -53,6 +53,27 @@ from shared.utils import files_locator as fl
 
 WAN_USE_FP32_ROPE_FREQS = True
 
+# Enable TF32 Tensor Cores for ~1.57x speedup on Ampere+ GPUs
+def _enable_tf32():
+    # Check if TF32 is explicitly disabled via command line flag
+    # Default is enabled (True) for performance
+    enable_tf32 = os.environ.get("WAN2GP_TF32", "1") == "1"
+    if enable_tf32 and torch.cuda.is_available():
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+
+# Enable TF32 when module is imported
+_enable_tf32()
+
+def set_tf32_enabled(enabled: bool):
+    """Call this to enable/disable TF32 based on --tf32 CLI argument"""
+    if enabled and torch.cuda.is_available():
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+    elif torch.cuda.is_available():
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+
 def optimized_scale(positive_flat, negative_flat):
 
     # Calculate dot production
