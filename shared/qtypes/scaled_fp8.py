@@ -705,6 +705,9 @@ def apply_pre_quantization(model, state_dict, quantization_map, default_dtype=No
             continue
         if not _is_float8_dtype(tensor.dtype):
             continue
+        # Leave 1‑bit packed tensors untouched – they are not FP8
+        if '.packed_weight' in key or '.scales' in key:
+            continue
         if key.endswith(".weight") or key.endswith(".bias"):
             module_name = key.rsplit(".", 1)[0]
         else:

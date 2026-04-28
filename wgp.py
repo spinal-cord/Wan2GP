@@ -3730,6 +3730,10 @@ else:
         transformer_type,
         output_type=get_output_type_for_model(transformer_type, 0),
     )
+    # Register binary FFN tensors with the offloader
+    # from models.wan.modules.model import register_binary_ffn_with_offloader
+    # register_binary_ffn_with_offloader(wan_model, offloadobj)
+
     if check_loras:
         transformer = get_transformer_model(wan_model)
         if hasattr(wan_model, "get_trans_lora"):
@@ -5919,6 +5923,9 @@ def generate_video(
             output_type=output_type,
             **model_kwargs,
         )
+        # Register binary FFN tensors with the offloader
+        # from models.wan.modules.model import register_binary_ffn_with_offloader
+        # register_binary_ffn_with_offloader(wan_model, offloadobj)
         send_cmd("status", "Model loaded")
         reload_needed=  False
     if args.test:
@@ -8981,6 +8988,9 @@ def preload_model_when_switching(state):
                 model_type,
                 output_type=get_output_type_for_model(model_type, 0),
             )
+            # Register binary FFN tensors with the offloader
+            # from models.wan.modules.model import register_binary_ffn_with_offloader
+            # register_binary_ffn_with_offloader(wan_model, offloadobj)
             yield f"Model loaded"
             reload_needed=  False 
         return   

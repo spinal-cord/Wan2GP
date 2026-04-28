@@ -23,6 +23,116 @@ from ..scail.model_scail import build_scail_pose_tokens
 from ..steadydancer.small_archs import FactorConv3d, PoseRefNetNoBNV3
 from ..steadydancer.mobilenetv2_dcd import DYModule
 
+def register_binary_ffn_with_offloader(wan_model, offload_mgr):
+    """
+    After the binary FFN layers have been loaded, update the offloader's
+    internal lists so that packed_weight, scales, and bias are moved to GPU.
+    """
+    for model_attr, model_id in [('model', 'transformer'), ('model2', 'transformer2')]:
+        transformer = getattr(wan_model, model_attr, None)
+        if transformer is None:
+            continue
+        for i, block in enumerate(transformer.blocks):
+            block_name = f"blocks.{i}"
+            ffn = block.ffn
+            if isinstance(ffn[0], BinaryFFNLinear):
+                # ffn.0
+                param_names = ['packed_weight', 'scales']
+                is_buf_flags = [True, True]
+                if ffn[0].bias is not None:
+                    param_names.append('bias')
+                    is_buf_flags.append(False)
+                offload_mgr.add_block_tensors(model_id, block_name, ffn[0],
+                                              param_names, is_buf_flags)
+
+                # ffn.2
+                param_names = ['packed_weight', 'scales']
+                is_buf_flags = [True, True]
+                if ffn[2].bias is not None:
+                    param_names.append('bias')
+                    is_buf_flags.append(False)
+                offload_mgr.add_block_tensors(model_id, block_name, ffn[2],
+                                              param_names, is_buf_flags)
+
+                # Remove old FP8 entries (they still hold memory but are harmless)
+                # We skip explicit removal because the old module references are lost.
+                # The old tensors will stay pinned but unused – a tiny memory overhead.
+
+try:
+    from binary_ffn_kernel import BinaryLinear
+    from binary_ffn_kernel.kernel import xnor_kernel as xnor_matmul_kernel
+    HAS_BINARY_FFN = True
+except ImportError:
+    HAS_BINARY_FFN = False
+
+class BinaryFFNLinear(nn.Module):
+    """
+    1‑bit linear layer with group‑128 scaling.
+    All weight data is kept as **plain attributes** (no parameters/buffers)
+    to stay out of the mmgp offloader's management. Device movement is
+    performed explicitly on every forward call.
+    """
+    def __init__(self, in_features, out_features, bias=True,
+                 packed_weight=None, scales=None, bias_data=None):
+        super().__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+
+        # Store everything as plain attributes – NEVER registered
+        if packed_weight is None:
+            self.packed_weight = torch.zeros(out_features, (in_features + 7) // 8,
+                                             dtype=torch.uint8)
+        else:
+            self.packed_weight = packed_weight
+
+        if scales is None:
+            num_groups = (in_features + 127) // 128
+            self.scales = torch.ones(out_features, num_groups, dtype=torch.float32)
+        else:
+            self.scales = scales
+
+        if bias and bias_data is not None:
+            self.bias = bias_data.float()
+        elif bias:
+            self.bias = torch.zeros(out_features)
+        else:
+            self.bias = None
+
+    def forward(self, x):
+        # ---- 1. Move all tensors to the input device ----
+        device = x.device
+        if self.packed_weight.device != device:
+            self.packed_weight = self.packed_weight.to(device)
+        if self.scales.device != device:
+            self.scales = self.scales.to(device)
+        if self.bias is not None and self.bias.device != device:
+            self.bias = self.bias.to(device)
+
+        # ---- 2. Handle 2‑D chunks from the memory‑saving code path ----
+        orig_shape = x.shape
+        if x.dim() == 2:
+            x = x.unsqueeze(1)          # [batch, in_dim] → [batch, 1, in_dim]
+
+        # ---- 3. Kernel expects float32 input ----
+        orig_dtype = x.dtype
+        if x.dtype != torch.float32:
+            x = x.float()
+
+        # ---- 4. XNOR‑popcount linear operation ----
+        out = xnor_matmul_kernel.forward(self.packed_weight, self.scales, x)
+
+        # ---- 5. Add bias (if present) ----
+        if self.bias is not None:
+            out = out + self.bias
+
+        # ---- 6. Restore original dtype and shape ----
+        if orig_dtype != torch.float32:
+            out = out.to(orig_dtype)
+        if len(orig_shape) == 2:
+            out = out.squeeze(1)
+
+        return out
+
 __all__ = ['WanModel']
 
 
@@ -568,7 +678,41 @@ class WanAttentionBlock(nn.Module):
                     class_interval=class_interval
                 )
             self.norm_x = WanLayerNorm(dim, eps, elementwise_affine=True)  if norm_input_visual else nn.Identity()
-    
+
+def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                          missing_keys, unexpected_keys, error_msgs):
+    ffn_prefix = prefix + 'ffn.'
+    if ffn_prefix + '0.packed_weight' in state_dict:
+        if not HAS_BINARY_FFN:
+            raise RuntimeError("Binary FFN kernel not installed but packed weights found.")
+
+        # Pop all packed tensors and biases – we'll pass them directly
+        w0 = state_dict.pop(ffn_prefix + '0.packed_weight')
+        s0 = state_dict.pop(ffn_prefix + '0.scales')
+        b0 = state_dict.pop(ffn_prefix + '0.bias', None)
+        w2 = state_dict.pop(ffn_prefix + '2.packed_weight')
+        s2 = state_dict.pop(ffn_prefix + '2.scales')
+        b2 = state_dict.pop(ffn_prefix + '2.bias', None)
+
+        self.ffn[0] = BinaryFFNLinear(w0.shape[1]*8, w0.shape[0],
+                                      bias=b0 is not None,
+                                      packed_weight=w0, scales=s0, bias_data=b0)
+        self.ffn[2] = BinaryFFNLinear(w2.shape[1]*8, w2.shape[0],
+                                      bias=b2 is not None,
+                                      packed_weight=w2, scales=s2, bias_data=b2)
+
+        # Remove the original FP8 keys from missing_keys
+        for i in ('0', '2'):
+            for suffix in ('.weight', '.bias', '.scale_weight', '.scale_input'):
+                try:
+                    missing_keys.remove(ffn_prefix + i + suffix)
+                except ValueError:
+                    pass
+
+    # Normal loading for attention, norms, etc.
+    super()._load_from_state_dict(state_dict, prefix, local_metadata, strict,
+                                  missing_keys, unexpected_keys, error_msgs)
+        
     def forward(
         self,
         x,
