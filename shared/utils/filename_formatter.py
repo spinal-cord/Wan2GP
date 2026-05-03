@@ -38,6 +38,10 @@ class FilenameFormatter:
     - {flow_shift} - flow shift value
     - {video_length} or {frames} - video length in frames
     - {guidance_scale} or {cfg} - guidance scale value
+    - {guidance2_scale} or {cfg2} - guidance2 scale value
+    - {guidance3_scale} or {cfg3} - guidance3 scale value
+    - {sample_solver} - sample solver
+    - {switch_threshold} - Model / Guidance Switch Threshold
 
     Date format tokens:
     - YYYY: 4-digit year (2025)
@@ -60,14 +64,17 @@ class FilenameFormatter:
     ALLOWED_KEYS = {
         'date', 'seed', 'resolution', 'num_inference_steps', 'steps',
         'prompt', 'flow_shift', 'video_length', 'frames',
-        'guidance_scale', 'cfg'
+        'guidance_scale', 'cfg', 'guidance2_scale', 'cfg2', 'guidance3_scale', 'cfg3',
+        'switch_threshold', 'sample_solver'
     }
 
     # Map aliases to actual setting keys
     KEY_ALIASES = {
         'steps': 'num_inference_steps',
         'frames': 'video_length',
-        'cfg': 'guidance_scale'
+        'cfg': 'guidance_scale',
+        'cfg2': 'guidance2_scale',
+        'cfg3': 'guidance3_scale'
     }
 
     # Pattern to match placeholders: {key}, {key(arg)}, or {key(%format)}
@@ -286,6 +293,11 @@ Placeholders (wrap in curly braces):
   {flow_shift}            - Flow shift value
   {video_length}          - Video length in frames (alias: {frames})
   {guidance_scale}        - Guidance scale (alias: {cfg})
+  {guidance2_scale}       - Guidance scale (alias: {cfg2})
+  {guidance3_scale}       - Guidance scale (alias: {cfg3})
+  {sample_solver}         - Sample solver
+  {switch_threshold}      - Model / Guidance Switch Threshold
+
 
 Date/Time tokens:
   YYYY - 4-digit year     MM - month (01-12)    DD - day (01-31)
@@ -298,4 +310,5 @@ Examples:
   {date(YYYYMMDD)}_{resolution}_{steps}steps
   {date(YYYY-MM-DD_HH-mm-ss)}_{seed}
   {date(DD.MM.YYYY)}_{prompt(30)}
+  shift_{flow_shift}_cfg_{guidance_scale}_cfg2_{guidance2_scale}_switch-at_{switch_threshold}_sampler_{sample_solver}_length_{video_length}_seed_{seed}_{date(YYYY-MM-DD_HH-mm-ss)}
 """
