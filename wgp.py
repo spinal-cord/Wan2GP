@@ -2,6 +2,8 @@
 import os, sys
 os.environ["GRADIO_LANG"] = "en"
 from shared.default_device import set_default_cuda_device_from_arg; set_default_cuda_device_from_arg("gpu")
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "1"
 # # os.environ.pop("TORCH_LOGS", None)  # make sure no env var is suppressing/overriding
 # os.environ["TORCH_LOGS"]= "recompiles"
 import torch._logging as tlog
@@ -168,6 +170,19 @@ from shared.qtypes import gguf as gguf_handler
 quant_router.register_file_extension("gguf", gguf_handler)
 from shared.kernels.quanto_int8_inject import maybe_enable_quanto_int8_kernel, disable_quanto_int8_kernel
 
+# if os.environ.get('DISABLE_PRINT') == '1':
+print = lambda *args, **kwargs: None
+
+import builtins
+builtins.print = lambda *args, **kwargs: None
+
+torch._logging.set_logs(dynamo=None, inductor=None)
+
+logging.get_logger("accelerate").setLevel(logging.ERROR)
+logging.get_logger("diffusers").setLevel(logging.ERROR)
+logging.get_logger("transformers").setLevel(logging.ERROR)
+
+logging.set_verbosity_error()
 
 def apply_int8_kernel_setting(enabled: int, notify_disabled = False) -> bool:
     global enable_int8_kernels, verbose_level
@@ -3145,7 +3160,8 @@ def check_loras_exist(model_type, loras_choices_files, download = False, send_cm
             if url is not None:
                 if download:
                     if send_cmd is not None:
-                        send_cmd("status", f'Downloading Lora {os.path.basename(lora_file)}...')
+                        # send_cmd("status", f'Downloading Lora {os.path.basename(lora_file)}...')
+                        send_cmd("status", f'Downloading Lora...')
                     try:
                         download_file(url, local_path)
                     except:
@@ -3446,11 +3462,12 @@ def load_models(model_type, override_profile = -1, output_type="video", **model_
     mixed_precision_transformer =  server_config.get("mixed_precision","0") == "1"
     transformer_type = None
 
-    for source_type, filename in zip(source_type_list, local_model_file_list):
-        if source_type==0:  
-            _load_models_info(f"Loading Model '{filename}' ...")
-        elif source_type==1:  
-            _load_models_info(f"Loading Module '{filename}' ...")
+    # for source_type, filename in zip(source_type_list, local_model_file_list):
+    #     if source_type==0:  
+
+    #         print(f"Loading Model '{filename}' ...")
+    #     elif source_type==1:  
+    #         print(f"Loading Module '{filename}' ...")
 
 
     model_type_handler = model_types_handlers[base_model_type] 
@@ -5857,7 +5874,8 @@ def generate_video(
     enhancer_mode = server_config.get("enhancer_mode", 1)
     if model_type != transformer_type or reload_needed or profile != loaded_profile:
         release_model()
-        send_cmd("status", f"Loading model {get_model_name(model_type)}...")
+        send_cmd("status", f"Loading model...")
+        # send_cmd("status", f"Loading model {get_model_name(model_type)}...")
         wan_model, offloadobj = load_models(
             model_type,
             override_profile,
